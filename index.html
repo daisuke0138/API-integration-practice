@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>api-marge test</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+<h1>Resas API 福岡県企業の特許</h1>
+<select id="patentSectionSelect">
+    <option value="">分野を選択</option>
+    <option value="生活必需品">生活必需品</option>
+    <option value="処理操作；運輸">処理操作；運輸</option>
+    <option value="化学；冶金">化学；冶金</option>
+    <option value="繊維；紙">繊維；紙</option>
+    <option value="固定構造物">固定構造物</option>
+    <option value="機械工学；照明；加熱；武器;爆破">機械工学；照明；加熱；武器;爆破</option>
+    <option value="物理学">物理学</option>
+    <option value="電気">電気</option>
+</select>
+<button id="databtn">データ取得</button>
+<div id="dataoutput"></div>
+
+<!-- News api area -->
+<h1>News API</h1>
+    <div class="categorynews">
+        <select id="newsSelect">
+            <option value="business">business</option>
+            <option value="science">science</option>
+            <option value="technology">technology</option>
+            <option value="health">health</option>
+        </select>
+        <button id="newsbtn">news取得</button>
+    </div>
+    <div class="newsoutput" id="newsoutput"></div>
+    <div class="pagination">
+        <button id="prevBtn">前の5件</button>
+        <button id="nextBtn">次の5件</button>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- axiosライブラリの読み込み -->
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<!-- resas apiデータ取得 -->
+    <script>
+        const requestUrl = 'https://opendata.resas-portal.go.jp/api/v1/industry/patent/list?year=2022&mode=1&prefCode=40&cityCode-&patentHolderId=-&sort1=5&sort2=2&offset=0'
+        let allPatentData = []; // 全特許データを格納する変数
+        let currentStartIndex = 0; // 現在の表示開始インデックス
+
+        // データ取得ボタンのクリックイベント
+        $('#databtn').on('click', function () {
+            axios
+                .get(requestUrl, {
+                    headers: {
+                        'X-API-KEY': ''
+                    }
+                })
+                .then(function (response) {
+                    // リクエスト成功時の処理（responseに結果が入っている）
+                    console.log(response);
+                    console.log(response.data.result.data);
+                    allPatentData = response.data.result.data; // 全特許データを保存
+                    currentStartIndex = 0; // インデックスをリセット
+                    filterAndDisplayPatents(); // フィルタリングと表示を実行
+                })
+                .catch(function (error) {
+                    // リクエスト失敗時の処理（errorにエラー内容が入っている）
+                    console.log(error);
+                })
+                .finally(function () {
+                    // 成功失敗に関わらず必ず実行
+                    console.log("done!");
+                });
+        });
+
+        // フィルタリングと特許データを表示する関数
+        function filterAndDisplayPatents() {
+            const selectedSection = $('#patentSectionSelect').val();
+            const filteredData = selectedSection ? allPatentData.filter(patent => patent.patentSection === selectedSection) : allPatentData;
+            displayPatents(filteredData);
+        };
+
+        // 特許データを表示する関数
+        function displayPatents(data) {
+            // テーブルの開始タグとヘッダーを追加
+            let tecdata = `<table border="1">
+                <thead>
+                    <tr>
+                        <th>出願番号</th>
+                        <th>FIクラス名</th>
+                        <th>特許技術テーマ名</th>
+                        <th>特許保有者</th>
+                    </tr>
+                </thead>
+            <tbody>`;
+
+            // データ行を追加
+            const endIndex = Math.min(data.length, currentStartIndex + 10);
+            for (let i = currentStartIndex; i < endIndex; i++) {
+                tecdata += `<tr>
+                    <td>${data[i].applyNo}</td>
+                    <td>${data[i].fiClass}</td>
+                    <td>${data[i].patentName}</td>
+                    <td>${data[i].patentHolder}</td>
+                </tr> `;
+            };
+            // テーブルの終了タグを追加
+            tecdata += `</tbody> </table>`;
+
+            // HTMLにテーブルを挿入
+            $("#dataoutput").html(tecdata);
+
+            // 「戻る」ボタンを追加
+            if (currentStartIndex > 0) {
+                $("#dataoutput").append('<button id="prevBtn">戻る</button>');
+                $('#prevBtn').on('click', function () {
+                    currentStartIndex = Math.max(0, currentStartIndex - 10);
+                    displayPatents(data);
+                });
+            };
+
+            // 「次へ」ボタンを追加
+            if (data.length > endIndex) {
+                $("#dataoutput").append('<button id="nextBtn">次へ</button>');
+                $('#nextBtn').on('click', function () {
+                    currentStartIndex += 10;
+                    displayPatents(data);
+                });
+            };
+        };
+    </script>
+
+<!-- news apiデータ取得 -->
+ <script>
+let currentPage = 1;
+let articlesPerPage = 5;
+let articles = [];
+
+$(document).ready(function () {
+// 初期状態でbusinessカテゴリのニュースを表示
+updateNews('business');
+
+$('#newsbtn').click(function () {
+currentPage = 1;
+updateNews();
+});
+
+$('#nextBtn').click(function () {
+if (currentPage * articlesPerPage < articles.length) { currentPage++; displayArticles(); } });
+    $('#prevBtn').click(function () { if (currentPage> 1) {
+    currentPage--;
+    displayArticles();
+    };
+    });
+    });
+
+    function updateNews(category) {
+    category = category || $('#newsSelect').val();
+    const requestUrl =
+    `https://newsapi.org/v2/top-headlines?country=jp&category=${category}&apiKey=`;
+
+    axios.get(requestUrl).then(function (response) {
+    // リクエスト成功時の処理（responseに結果が入っている）
+    articles = response.data.articles;
+    displayArticles();
+    }).catch(function (error) {
+    // リクエスト失敗時の処理（errorにエラー内容が入っている）
+    console.log(error);
+    }).finally(function () {
+    // 成功失敗に関わらず必ず実行
+    console.log("done!");
+    });
+    };
+
+    function displayArticles() {
+    const outputDiv = $('#newsoutput');
+    outputDiv.empty();
+
+    const start = (currentPage - 1) * articlesPerPage;
+    const end = Math.min(start + articlesPerPage, articles.length);
+
+    for (let i = start; i < end; i++) { const articleDiv=$('<div class="article">');
+        const image = $('<img>').attr('src', articles[i].urlToImage).attr('alt', 'News Image');
+        const link = $('<a>').attr('href', articles[i].url).append(image);
+            // テキスト文字数を30文字に制限
+            const maxTitleLength = 30; // 制限する文字数
+            let titleText = articles[i].title;
+            if (titleText.length > maxTitleLength) {
+            titleText = titleText.substring(0, maxTitleLength) + '...';
+            };
+            const title = $('<p>').text(titleText);
+                articleDiv.append(link).append(title);
+                outputDiv.append(articleDiv);
+    };
+};
+</script>
+
+</body>
+</html>
