@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>api-marge test</title>
+    <title>API-integration-practice</title>
     <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
-<h1>Resas API 福岡県企業の特許</h1>
+<h2>Resas API 福岡県企業の特許</h2>
+<p>Resasリンク <a href="https://opendata.resas-portal.go.jp/docs/api/v1/index.html" target="_blank">here</a></p>
 <select id="patentSectionSelect">
     <option value="">分野を選択</option>
     <option value="生活必需品">生活必需品</option>
@@ -15,7 +16,7 @@
     <option value="化学；冶金">化学；冶金</option>
     <option value="繊維；紙">繊維；紙</option>
     <option value="固定構造物">固定構造物</option>
-    <option value="機械工学；照明；加熱；武器;爆破">機械工学；照明；加熱；武器;爆破</option>
+    <option value="機械工学；照明；加熱；武器；爆破">機械工学；照明；加熱；武器;爆破</option>
     <option value="物理学">物理学</option>
     <option value="電気">電気</option>
 </select>
@@ -23,7 +24,7 @@
 <div id="dataoutput"></div>
 
 <!-- News api area -->
-<h1>News API</h1>
+<h2>News API</h2>
     <div class="categorynews">
         <select id="newsSelect">
             <option value="business">business</option>
@@ -38,6 +39,16 @@
         <button id="prevBtn">前の5件</button>
         <button id="nextBtn">次の5件</button>
     </div>
+
+<!-- chatgpt3.5 api -->
+<h2>Chatgpt 検索</h2>
+    <textarea id="request_text" cols="100" rows="10">
+</textarea>
+    <br />
+    <input type="button" onClick="reply()" value="検索" />
+    <br /><br />
+    <textarea id="response_text" cols="100" rows="10" disabled>
+</textarea>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <!-- axiosライブラリの読み込み -->
@@ -54,7 +65,7 @@
             axios
                 .get(requestUrl, {
                     headers: {
-                        'X-API-KEY': ''
+                        'X-API-KEY': 'api-key'
                     }
                 })
                 .then(function (response) {
@@ -159,7 +170,7 @@ if (currentPage * articlesPerPage < articles.length) { currentPage++; displayArt
     function updateNews(category) {
     category = category || $('#newsSelect').val();
     const requestUrl =
-    `https://newsapi.org/v2/top-headlines?country=jp&category=${category}&apiKey=`;
+    `https://newsapi.org/v2/top-headlines?country=jp&category=${category}&apiKey=api-key`;
 
     axios.get(requestUrl).then(function (response) {
     // リクエスト成功時の処理（responseに結果が入っている）
@@ -196,6 +207,39 @@ if (currentPage * articlesPerPage < articles.length) { currentPage++; displayArt
     };
 };
 </script>
+
+<!-- chatgpt-api -->
+<script>
+// 下記にchatgpt情報を貼り付け
+
+
+
+    function reply() {
+        let text = $("#request_text").val();
+        axios.post(
+            URL,
+            {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    { "role": "user", "content": text }
+                ],
+                "max_tokens": 200
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${API_KEY}`,
+                },
+            }
+        ).then(function (response) {
+            let chatgpt_response = response.data.choices[0].message.content;
+            $("#response_text").val(chatgpt_response);
+        }).catch(function (error) {
+            console.log(error);
+        });
+    };
+</script>
+
 
 </body>
 </html>
